@@ -39,5 +39,7 @@ class CNN(nn.Module):
     
     def init_weights(self):
         for m in self.modules():
-            if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0.0, std=1/m.in_channels**0.5)
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, mean=0.0, std=1/(m.in_channels * m.kernel_size[0] * m.kernel_size[1])**0.5)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, mean=0.0, std=1/m.in_features**0.5)
