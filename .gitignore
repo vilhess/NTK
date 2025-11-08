@@ -3,3 +3,4 @@ __pycache__/
 *.pth
 */xautodl
 */cifar-10-batches-py/
+mnist/
