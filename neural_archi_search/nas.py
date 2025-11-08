@@ -30,7 +30,6 @@ for index in trange(len(api)):
 
     config = api.get_net_config(index, 'cifar10')
     network = get_cell_based_tiny_net(config).to(DEVICE)
-    network.eval()
 
     info = api.query_meta_info_by_index(index, hp="200")
     accuracy = info.get_metrics("cifar10-valid", 'valid')['accuracy']/100.
@@ -46,10 +45,10 @@ all_scores = np.array(all_scores)
 all_accuracies = np.array(all_accuracies)
 
 plt.scatter(np.log(all_scores), all_accuracies)
-plt.xlabel('Log NTK Score')
+plt.xlabel('Log $\lambda_{min}(\Theta)$')
 plt.ylabel('Validation Accuracy')
-plt.title('Log NTK Score vs Validation Accuracy on NAS-Bench-201 (CIFAR-10)')
-plt.savefig('nb201_log_ntk_vs_acc.png')
+plt.title('Log $\lambda_{min}(\Theta)$ vs Validation Accuracy on NAS-Bench-201 (CIFAR-10)')
+plt.savefig('nb201_log_lambda_vs_acc.png')
 plt.close()
 
-print("Plot saved as 'nb201_log_ntk_vs_acc.png'.")
+print("Plot saved as 'nb201_log_lambda_vs_acc.png'.")
