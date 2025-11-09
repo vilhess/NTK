@@ -35,7 +35,7 @@ rm -rf XAutoDL
 
 4) Download datasets
 ```bash
-wget -P cifar/ https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz
-tar -xvzf cifar/cifar-10-python.tar.gz -C cifar/
-rm cifar/cifar-10-python.tar.gz
+wget -P data/cifar/ https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz
+tar -xvzf data/cifar/cifar-10-python.tar.gz -C data/cifar/
+rm data/cifar/cifar-10-python.tar.gz
 ```
