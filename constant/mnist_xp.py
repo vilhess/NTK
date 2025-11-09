@@ -15,7 +15,7 @@ from models.classification import NN, CNN
 from compute_ntk import get_ntk, get_fnet_single
 from utils import get_relative_norm
 
-DEVICE="cuda" if torch.cuda.is_available() else "cpu"
+DEVICE="cpu"
 
 transform = Compose([
                     ToTensor(),
@@ -88,7 +88,7 @@ plt.xticks(epochs)
 
 plt.legend()
 plt.tight_layout()
-plt.savefig('../figures/constant_mnist_ntk_relative_norm_fcnn.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../figures/constant/constant_mnist_ntk_relative_norm_fcnn.pdf', bbox_inches='tight', format="pdf")
 plt.close()
 
 # Convolutional Neural Network
@@ -149,5 +149,5 @@ epochs = np.arange(len(mean_results))
 plt.xticks(epochs)
 plt.legend()
 plt.tight_layout()
-plt.savefig('../figures/constant_mnist_ntk_relative_norm_cnn.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../figures/constant/constant_mnist_ntk_relative_norm_cnn.pdf', bbox_inches='tight', format="pdf")
 plt.close()

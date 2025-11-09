@@ -12,7 +12,7 @@ from itertools import combinations
 from constant.models.classification import NN, CNN
 from compute_ntk import get_ntk, get_fnet_single
 
-DEVICE="cuda" if torch.cuda.is_available() else "cpu"
+DEVICE="cpu"
 
 transform = Compose([
                     ToTensor(),
@@ -85,7 +85,7 @@ plt.title("Distribution of Pairwise NTK Norms per Hidden Dimension", fontsize=13
 plt.grid(axis="y", linestyle="--", alpha=0.6)
 
 plt.tight_layout()
-plt.savefig('../figures/deterministic_mnist_ntk_pairwise_distance_boxplot_fcnn.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../figures/deterministic/deterministic_mnist_ntk_pairwise_distance_boxplot_fcnn.pdf', bbox_inches='tight', format="pdf")
 plt.close()
 
 # Convolutional network hidden dimensions to test
@@ -149,5 +149,5 @@ plt.title("Distribution of Pairwise NTK Norms per Hidden Dimension", fontsize=13
 plt.grid(axis="y", linestyle="--", alpha=0.6)
 
 plt.tight_layout()
-plt.savefig('../figures/deterministic_mnist_ntk_pairwise_distance_boxplot_cnn.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../figures/deterministic/deterministic_mnist_ntk_pairwise_distance_boxplot_cnn.pdf', bbox_inches='tight', format="pdf")
 plt.close()

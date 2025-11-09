@@ -13,7 +13,7 @@ from compute_ntk import get_ntk, get_fnet_single
 from utils import get_relative_norm
 from data.boston.dataset import BostonDataset
 
-DEVICE="cuda" if torch.cuda.is_available() else "cpu"
+DEVICE="cpu"
 
 dataset = BostonDataset(path="../data/boston/Boston.csv")
 
@@ -73,5 +73,5 @@ plt.ylabel(r'$\frac{\|\theta_t - \theta_0\|^2}{\|\theta_0\|^2}$')
 plt.title("Evolution of the relative norm of the NTK during the training process")
 plt.legend()
 plt.tight_layout()
-plt.savefig('../figures/constant_boston_ntk_relative_norm.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../figures/constant/constant_boston_ntk_relative_norm.pdf', bbox_inches='tight', format="pdf")
 plt.close()

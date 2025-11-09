@@ -49,7 +49,7 @@ plt.xlabel('Log $\lambda_{min}(\Theta)$')
 plt.ylabel('Validation Accuracy')
 plt.title('Log $\lambda_{min}(\Theta)$ vs Validation Accuracy on NAS-Bench-201 (CIFAR-10)')
 plt.tight_layout()
-plt.savefig('../../figures/nb201_log_lambda_vs_acc.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../../figures/nas/nb201_log_lambda_vs_acc.pdf', bbox_inches='tight', format="pdf")
 plt.close()
 
 print("Plot saved as 'nb201_log_lambda_vs_acc.pdf'.")

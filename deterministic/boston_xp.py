@@ -11,7 +11,7 @@ from itertools import combinations
 from compute_ntk import get_ntk, get_fnet_single
 from data.boston.dataset import BostonDataset
 
-DEVICE="cuda" if torch.cuda.is_available() else "cpu"
+DEVICE="cpu"
 
 dataset = BostonDataset(path="../data/boston/Boston.csv")
 
@@ -98,5 +98,5 @@ plt.title("Distribution of Pairwise NTK Norms per Hidden Dimension", fontsize=13
 plt.grid(axis="y", linestyle="--", alpha=0.6)
 
 plt.tight_layout()
-plt.savefig('../figures/deterministic_boston_ntk_pairwise_distance_boxplot.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../figures/deterministic/deterministic_boston_ntk_pairwise_distance_boxplot.pdf', bbox_inches='tight', format="pdf")
 plt.close()

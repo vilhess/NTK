@@ -18,9 +18,9 @@ train_size = int(0.8 * len(dataset))
 test_size = len(dataset) - train_size
 trainset, testset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
-xs_train = trainset[:][0]
-ys_train = trainset[:][1].reshape(-1, 1)
-x_ntk = trainset[:][0][:100]
+xs_train = torch.stack([trainset[i][0] for i in range(len(trainset))])
+ys_train = torch.stack([trainset[i][1] for i in range(len(trainset))]).reshape(-1, 1)
+x_ntk = xs_train[:100]  # to compute ntk on a subset to save time
 
 # hidden layer size 10 
 
@@ -37,7 +37,9 @@ for i in pbar:
 
     with torch.no_grad():
         ntk = compute_ntk(model,x_ntk)
+        model.eval()
         preds = model(xs_train)
+        model.train()
     l, v = torch.linalg.eig(ntk)
     init_error = criterion(preds, ys_train).item()
     losses_simu = [init_error]
@@ -57,7 +59,9 @@ for i in pbar:
             steps_loss.append(loss.item())
         with torch.no_grad():
             ntk = compute_ntk(model, x_ntk)
+            model.eval()
             preds = model(xs_train)
+            model.train()
         l, v = torch.linalg.eig(ntk)
         train_loss = criterion(preds, ys_train)
         lam_min = torch.min(l.real)
@@ -78,7 +82,7 @@ plt.plot(np.mean(all_borne_infinie_10, axis=0), c="green", label="borne $\lambda
 plt.title('Hidden layer size : 10')
 plt.legend()
 plt.tight_layout()
-plt.savefig('../../figures/loss_bound_boston_hidden_10.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_10.pdf', bbox_inches='tight', format="pdf")
 plt.close()
 
 # hidden layer size 100
@@ -96,7 +100,9 @@ for i in pbar:
 
     with torch.no_grad():
         ntk = compute_ntk(model,x_ntk)
+        model.eval()
         preds = model(xs_train)
+        model.train()
     l, v = torch.linalg.eig(ntk)
     init_error = criterion(preds, ys_train).item()
     losses_simu = [init_error]
@@ -116,7 +122,9 @@ for i in pbar:
             steps_loss.append(loss.item())
         with torch.no_grad():
             ntk = compute_ntk(model, x_ntk)
+            model.eval()
             preds = model(xs_train)
+            model.train()
         l, v = torch.linalg.eig(ntk)
         train_loss = criterion(preds, ys_train)
         lam_min = torch.min(l.real)
@@ -137,7 +145,7 @@ plt.plot(np.mean(all_borne_infinie_100, axis=0), c="green", label="borne $\lambd
 plt.title('Hidden layer size : 100')
 plt.legend()
 plt.tight_layout()
-plt.savefig('../../figures/loss_bound_boston_hidden_100.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_100.pdf', bbox_inches='tight', format="pdf")
 plt.close()
 
 # hidden layer size 1000
@@ -155,7 +163,9 @@ for i in pbar:
 
     with torch.no_grad():
         ntk = compute_ntk(model,x_ntk)
+        model.eval()
         preds = model(xs_train)
+        model.train()
     l, v = torch.linalg.eig(ntk)
     init_error = criterion(preds, ys_train).item()
     losses_simu = [init_error]
@@ -175,7 +185,9 @@ for i in pbar:
             steps_loss.append(loss.item())
         with torch.no_grad():
             ntk = compute_ntk(model, x_ntk)
+            model.eval()
             preds = model(xs_train)
+            model.train()
         l, v = torch.linalg.eig(ntk)
         train_loss = criterion(preds, ys_train)
         lam_min = torch.min(l.real)
@@ -197,5 +209,5 @@ plt.title('Hidden layer size : 1000')
 plt.legend()
 plt.xlabel('Epochs')
 plt.tight_layout()
-plt.savefig('../../figures/loss_bound_boston_hidden_1000.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_1000.pdf', bbox_inches='tight', format="pdf")
 plt.close()

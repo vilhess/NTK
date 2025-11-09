@@ -3,5 +3,5 @@ __pycache__/
 *.pth
 */xautodl
 data/cifar/cifar-10-batches-py/
-mnist/
+data/mnist/
 notebooks/
