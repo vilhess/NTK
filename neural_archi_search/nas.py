@@ -19,7 +19,7 @@ print("Loading NAS-Bench-201 API...")
 api = API('nb201_api/NAS-Bench-201-v1_1-096897.pth', verbose=False)
 print("API loaded.")
 
-dataset = CIFAR10Dataset(data_dir="../cifar/cifar-10-batches-py/")
+dataset = CIFAR10Dataset(data_dir="../data/cifar/cifar-10-batches-py/")
 dataset_classes, class_permutation = subset_classes(dataset, samples_per_class=10, device=DEVICE, subsample=100)
 
 all_scores = []
@@ -48,7 +48,8 @@ plt.scatter(np.log(all_scores), all_accuracies)
 plt.xlabel('Log $\lambda_{min}(\Theta)$')
 plt.ylabel('Validation Accuracy')
 plt.title('Log $\lambda_{min}(\Theta)$ vs Validation Accuracy on NAS-Bench-201 (CIFAR-10)')
-plt.savefig('nb201_log_lambda_vs_acc.png')
+plt.tight_layout()
+plt.savefig('../../figures/nb201_log_lambda_vs_acc.pdf', bbox_inches='tight', format="pdf")
 plt.close()
 
-print("Plot saved as 'nb201_log_lambda_vs_acc.png'.")
+print("Plot saved as 'nb201_log_lambda_vs_acc.pdf'.")
