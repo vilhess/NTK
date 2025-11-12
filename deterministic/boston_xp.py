@@ -33,7 +33,7 @@ class Network(nn.Module):
     def init_weights(self):
         for i, m in enumerate(self.block):
             if isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0.0, std=1.0/np.sqrt(m.in_features))
+                nn.init.normal_(m.weight, mean=0.0, std=1.0/torch.sqrt(torch.tensor(m.in_features, dtype=torch.float32)))
 
 
 ITER = 50
