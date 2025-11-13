@@ -63,14 +63,29 @@ for dim in results_dict.keys():
             rel_norm = get_relative_norm(ntk, ntk_init)
             results_dict[dim][iter].append(rel_norm)
 
-for dim in results_dict.keys():
-    mean_results=np.mean(results_dict[dim], axis=0)
-    plt.plot(mean_results, label=dim)
+for dim, values in results_dict.items():
+    # Compute mean and std over runs
+    mean_results = np.mean(values, axis=0)
+    std_results = np.std(values, axis=0)
 
-plt.xlabel('Epochs')
-plt.ylabel(r'$\frac{\|\theta_t - \theta_0\|^2}{\|\theta_0\|^2}$')
-plt.title("Evolution of the relative norm of the NTK during the training process")
-plt.legend()
+    epochs = np.arange(len(mean_results))
+
+    # Plot mean curve
+    plt.plot(epochs, mean_results, label=f'{dim}', linewidth=2)
+
+    # Fill standard deviation interval
+    plt.fill_between(epochs,
+                     mean_results - std_results,
+                     mean_results + std_results,
+                     alpha=0.2)
+
+plt.xlabel('Epochs', fontsize=12)
+plt.ylabel(r'$\frac{\|\theta_t - \theta_0\|^2}{\|\theta_0\|^2}$', fontsize=14)
+plt.title("Evolution of the Relative NTK Norm During Training", fontsize=14)
+plt.legend(title='Width', fontsize=10)
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
 plt.tight_layout()
 plt.savefig('../figures/constant/constant_boston_ntk_relative_norm.pdf', bbox_inches='tight', format="pdf")
 plt.close()

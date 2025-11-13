@@ -106,12 +106,34 @@ for hid_size in [100, 500, 1000, 5000]:
         all_borne_finie.append(records_borne_timesteps)
         all_borne_infinie.append(records_borne_lambda0)
 
-    plt.plot(np.mean(all_losses, axis=0), c="red", label="train loss")
-    plt.plot(np.mean(all_borne_finie, axis=0), c="blue", label="bound $\lambda_t$")
-    plt.plot(np.mean(all_borne_infinie, axis=0), c="green", label="bound $\lambda_0$")
-    plt.title('Hidden size : '+str(hid_size))
-    plt.legend()
-    plt.xlabel('Epochs')
+    epochs = np.arange(len(all_losses[0]))
+
+    # Compute mean and standard deviation for each metric
+    mean_loss = np.mean(all_losses, axis=0)
+    std_loss = np.std(all_losses, axis=0)
+
+    mean_borne_finie = np.mean(all_borne_finie, axis=0)
+    std_borne_finie = np.std(all_borne_finie, axis=0)
+
+    mean_borne_infinie = np.mean(all_borne_infinie, axis=0)
+    std_borne_infinie = np.std(all_borne_infinie, axis=0)
+
+    # Plot mean curves
+    plt.plot(epochs, mean_loss, c="red", label="Train loss", linewidth=2)
+    plt.fill_between(epochs, mean_loss - std_loss, mean_loss + std_loss, color="red", alpha=0.2)
+
+    plt.plot(epochs, mean_borne_finie, c="blue", label=r"Bound $\lambda_t$", linewidth=2)
+    plt.fill_between(epochs, mean_borne_finie - std_borne_finie, mean_borne_finie + std_borne_finie, color="blue", alpha=0.2)
+
+    plt.plot(epochs, mean_borne_infinie, c="green", label=r"Bound $\lambda_0$", linewidth=2)
+    plt.fill_between(epochs, mean_borne_infinie - std_borne_infinie, mean_borne_infinie + std_borne_infinie, color="green", alpha=0.2)
+
+    # Labels and formatting
+    plt.title(f"Hidden Size: {hid_size}", fontsize=14)
+    plt.xlabel("Epochs", fontsize=12)
+    plt.ylabel("Value", fontsize=12)
+    plt.legend(fontsize=10)
+    plt.grid(alpha=0.3)
     plt.tight_layout()
     plt.savefig(f'../../figures/loss_bound/loss_bound_mnist_fcnn_hidden_{hid_size}.pdf', bbox_inches='tight', format="pdf")
     plt.close()
