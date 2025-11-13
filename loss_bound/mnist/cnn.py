@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 from tqdm import trange
 
 from models import CNN
-from compute_score import compute_score
+from compute_score import compute_score, subset_classes
 
-DEVICE="cpu"
+DEVICE="cuda" if torch.cuda.is_available() else "cpu"
 
 transform = Compose([
                     ToTensor(),
@@ -20,271 +20,98 @@ transform = Compose([
                     ])
 
 trainset = MNIST(root="../../data/mnist", train=True, download=True, transform=transform)
-trainloader = DataLoader(trainset, batch_size=256, shuffle=True, num_workers=10, pin_memory=True)
+dataset_classes = subset_classes(trainset, samples_per_class=30, device=DEVICE)
 
-class_to_data = {i:[] for i in range(10)}
+inputs = []
+targets = []
+for c in dataset_classes:
+    for data in dataset_classes[c]:
+        inputs.append(data)
+        targets.append(c)
+inputs = torch.stack(inputs).to(DEVICE)
+targets = torch.tensor(targets).to(DEVICE)
 
-for data, label in trainset:
-    class_to_data[label].append(data)
 
-for class_label in class_to_data:
-    class_to_data[class_label] = torch.stack(class_to_data[class_label]).to(DEVICE)
+for hid_channels in [12, 32, 64, 128, 256]:
 
-# hidden channel 12
+    all_losses = []
+    all_borne_infinie = []
+    all_borne_finie = []
 
-all_losses_10 = []
-all_borne_infinie_10 = []
-all_borne_finie_10 = []
+    for i in range(10):
+        print(f"**** model {i} ****")
 
-for i in range(10):
-    print(f"**** model {i} ****")
+        model = CNN(hidden_channels=hid_channels).to(DEVICE)
 
-    model = CNN(hidden_channels=12).to(DEVICE)
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.SGD(model.parameters(), lr=1e-3)
 
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-5)
+        records_loss = []
+        records_borne_timesteps = []
+        records_borne_lambda0 = []
+        records_loss_exp = []
 
-    records_loss = []
-    records_borne_timesteps = []
-    records_borne_lambda0 = []
-    records_loss_exp = []
+        lambda_min_init, classes = compute_score(model, dataset_classes, device=DEVICE)
 
-    lambda_min_init, classes = compute_score(model, trainset, device=DEVICE)
+        full_score_init = 0
+        score_init = []
 
-    full_score_init = 0
-    score_init = []
-
-    model.eval()
-    for c in classes:
-        score_c = torch.sum((1 - F.softmax(model(class_to_data[c]), dim=1)[:,c])**2)
-        full_score_init+=score_c
-    full_score_init/=len(trainset)
-    borne_init = full_score_init
-    model.train()
-
-    records_borne_timesteps.append(borne_init.item())
-    records_borne_lambda0.append(borne_init.item())
-    records_loss_exp.append(borne_init.item())
-    
-    pbar = trange(10)
-    for epoch in pbar:
+        model.eval()
+        with torch.no_grad():
+            for c in classes:
+                score_c = torch.sum((1 - F.softmax(model(dataset_classes[c]), dim=1)[:,c])**2)
+                full_score_init+=score_c
+        full_score_init/=len(inputs)
+        borne_init = full_score_init
         model.train()
 
-        running_loss = 0
-        for i, (inputs, targets) in enumerate(trainloader):
-            inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
+        records_borne_timesteps.append(borne_init.item())
+        records_borne_lambda0.append(borne_init.item())
+        records_loss_exp.append(borne_init.item())
+        
+        pbar = trange(10)
+        for epoch in pbar:
+            model.train()
+
             preds = model(inputs)
             loss = criterion(preds, targets)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            running_loss+=loss.item()
-        pbar.set_description(f"Epoch : {epoch+1} : loss {running_loss}")
+            pbar.set_description(f"Epoch : {epoch+1} : loss {loss.item()}")
 
-        lambda_min, classes = compute_score(model, trainset, device=DEVICE)
+            lambda_min, classes = compute_score(model, dataset_classes, device=DEVICE)
 
-        full_score = 0
-        borne_timesteps = 0
-        borne_lambda0 = 0
+            full_score = 0
+            borne_timesteps = 0
+            borne_lambda0 = 0
 
-        model.eval()
-        for c in classes:
-            score_c = sum((1 - F.softmax(model(class_to_data[c]), dim=1)[:,c])**2)
-            full_score+=score_c
-        model.train()
+            model.eval()
+            with torch.no_grad():
+                for c in classes:
+                    score_c = sum((1 - F.softmax(model(dataset_classes[c]), dim=1)[:,c])**2)
+                    full_score+=score_c
+            model.train()
 
-        borne_timesteps = np.exp(-lambda_min*(epoch+1))*full_score_init.detach()
-        borne_lambda0 = np.exp(-lambda_min_init*(epoch+1))*full_score_init.detach()
+            borne_timesteps = np.exp(-lambda_min*(epoch+1))*full_score_init.detach()
+            borne_lambda0 = np.exp(-lambda_min_init*(epoch+1))*full_score_init.detach()
 
-        full_score = full_score.item()/len(trainset)
-        records_borne_timesteps.append(borne_timesteps.item())
-        records_borne_lambda0.append(borne_lambda0.item())
-        records_loss_exp.append(full_score)
-        records_loss.append(running_loss)
+            full_score = full_score.item()/len(inputs)
+            records_borne_timesteps.append(borne_timesteps.item())
+            records_borne_lambda0.append(borne_lambda0.item())
+            records_loss_exp.append(full_score)
+            records_loss.append(loss.item())
 
-    all_losses_10.append(records_loss_exp)
-    all_borne_finie_10.append(records_borne_timesteps)
-    all_borne_infinie_10.append(records_borne_lambda0)
+        all_losses.append(records_loss_exp)
+        all_borne_finie.append(records_borne_timesteps)
+        all_borne_infinie.append(records_borne_lambda0)
 
-plt.plot(np.mean(all_losses_10, axis=0), c="red", label="train loss")
-plt.plot(np.mean(all_borne_finie_10, axis=0), c="blue", label="bound $\lambda_t$")
-plt.plot(np.mean(all_borne_infinie_10, axis=0), c="green", label="bound $\lambda_0$")
-plt.title('Hidden channels size : 12')
-plt.legend()
-plt.xlabel('Epochs')
-plt.tight_layout()
-plt.savefig('../../figures/loss_bound/loss_bound_mnist_cnn_hidden_12.pdf', bbox_inches='tight', format="pdf")
-plt.close()
-
-# hidden channel 64
-
-all_losses_100 = []
-all_borne_infinie_100 = []
-all_borne_finie_100 = []
-
-for i in range(10):
-    print(f"**** model {i} ****")
-
-    model = CNN(hidden_channels=64).to(DEVICE)
-
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-5)
-
-    records_loss = []
-    records_borne_timesteps = []
-    records_borne_lambda0 = []
-    records_loss_exp = []
-
-    lambda_min_init, classes = compute_score(model, trainset, device=DEVICE)
-
-    full_score_init = 0
-    score_init = []
-
-    model.eval()
-    for c in classes:
-        score_c = torch.sum((1 - F.softmax(model(class_to_data[c]), dim=1)[:,c])**2)
-        full_score_init+=score_c
-    full_score_init/=len(trainset)
-    borne_init = full_score_init
-    model.train()
-
-    records_borne_timesteps.append(borne_init.item())
-    records_borne_lambda0.append(borne_init.item())
-    records_loss_exp.append(borne_init.item())
-    
-    pbar = trange(10)
-    for epoch in pbar:
-        model.train()
-
-        running_loss = 0
-        for i, (inputs, targets) in enumerate(trainloader):
-            inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
-            preds = model(inputs)
-            loss = criterion(preds, targets)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            running_loss+=loss.item()
-        pbar.set_description(f"Epoch : {epoch+1} : loss {running_loss}")
-
-        lambda_min, classes = compute_score(model, trainset, device=DEVICE)
-
-        full_score = 0
-        borne_timesteps = 0
-        borne_lambda0 = 0
-
-        model.eval()
-        for c in classes:
-            score_c = sum((1 - F.softmax(model(class_to_data[c]), dim=1)[:,c])**2)
-            full_score+=score_c
-        model.train()
-
-        borne_timesteps = np.exp(-lambda_min*(epoch+1))*full_score_init.detach()
-        borne_lambda0 = np.exp(-lambda_min_init*(epoch+1))*full_score_init.detach()
-
-        full_score = full_score.item()/len(trainset)
-        records_borne_timesteps.append(borne_timesteps.item())
-        records_borne_lambda0.append(borne_lambda0.item())
-        records_loss_exp.append(full_score)
-        records_loss.append(running_loss)
-
-    all_losses_100.append(records_loss_exp)
-    all_borne_finie_100.append(records_borne_timesteps)
-    all_borne_infinie_100.append(records_borne_lambda0)
-
-plt.plot(np.mean(all_losses_100, axis=0), c="red", label="train loss")
-plt.plot(np.mean(all_borne_finie_100, axis=0), c="blue", label="bound $\lambda_t$")
-plt.plot(np.mean(all_borne_infinie_100, axis=0), c="green", label="bound $\lambda_0$")
-plt.title('Hidden channel size : 64')
-plt.legend()
-plt.xlabel('Epochs')
-plt.tight_layout()
-plt.savefig('../../figures/loss_bound/loss_bound_mnist_cnn_hidden_64.pdf', bbox_inches='tight', format="pdf")
-plt.close()
-
-# hidden channel 100
-
-all_losses_1000 = []
-all_borne_infinie_1000 = []
-all_borne_finie_1000 = []
-
-for i in range(5):
-    print(f"**** model {i} ****")
-
-    model = CNN(hidden_channels=100).to(DEVICE)
-
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-5)
-
-    records_loss = []
-    records_borne_timesteps = []
-    records_borne_lambda0 = []
-    records_loss_exp = []
-
-    lambda_min_init, classes = compute_score(model, trainset, device=DEVICE)
-
-    full_score_init = 0
-    score_init = []
-
-    model.eval()
-    for c in classes:
-        score_c = torch.sum((1 - F.softmax(model(class_to_data[c]), dim=1)[:,c])**2)
-        full_score_init+=score_c
-    full_score_init/=len(trainset)
-    borne_init = full_score_init
-    model.train()
-
-    records_borne_timesteps.append(borne_init.item())
-    records_borne_lambda0.append(borne_init.item())
-    records_loss_exp.append(borne_init.item())
-    
-    pbar = trange(10)
-    for epoch in pbar:
-        model.train()
-
-        running_loss = 0
-        for i, (inputs, targets) in enumerate(trainloader):
-            inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
-            preds = model(inputs)
-            loss = criterion(preds, targets)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            running_loss+=loss.item()
-        pbar.set_description(f"Epoch : {epoch+1} : loss {running_loss}")
-
-        model.eval()
-        lambda_min, classes = compute_score(model, trainset, device=DEVICE)
-
-        full_score = 0
-        borne_timesteps = 0
-        borne_lambda0 = 0
-
-        model.eval()
-        for c in classes:
-            score_c = sum((1 - F.softmax(model(class_to_data[c]), dim=1)[:,c])**2)
-            full_score+=score_c
-        model.train()
-
-        borne_timesteps = np.exp(-lambda_min*(epoch+1))*full_score_init.detach()
-        borne_lambda0 = np.exp(-lambda_min_init*(epoch+1))*full_score_init.detach()
-
-        full_score = full_score.item()/len(trainset)
-        records_borne_timesteps.append(borne_timesteps.item())
-        records_borne_lambda0.append(borne_lambda0.item())
-        records_loss_exp.append(full_score)
-        records_loss.append(running_loss)
-
-    all_losses_1000.append(records_loss_exp)
-    all_borne_finie_1000.append(records_borne_timesteps)
-    all_borne_infinie_1000.append(records_borne_lambda0)
-
-plt.plot(np.mean(all_losses_1000, axis=0), c="red", label="train loss")
-plt.plot(np.mean(all_borne_finie_1000, axis=0), c="blue", label="bound $\lambda_t$")
-plt.plot(np.mean(all_borne_infinie_1000, axis=0), c="green", label="bound $\lambda_0$")
-plt.title('Hidden channel size : 100')
-plt.legend()
-plt.xlabel('Epochs')
-plt.tight_layout()
-plt.savefig('../../figures/loss_bound/loss_bound_mnist_cnn_hidden_100.pdf', bbox_inches='tight', format="pdf")
-plt.close()
+    plt.plot(np.mean(all_losses, axis=0), c="red", label="train loss")
+    plt.plot(np.mean(all_borne_finie, axis=0), c="blue", label="bound $\lambda_t$")
+    plt.plot(np.mean(all_borne_infinie, axis=0), c="green", label="bound $\lambda_0$")
+    plt.title('Hidden channels size : '+str(hid_channels))
+    plt.legend()
+    plt.xlabel('Epochs')
+    plt.tight_layout()
+    plt.savefig(f'../../figures/loss_bound/loss_bound_mnist_cnn_hidden_{hid_channels}.pdf', bbox_inches='tight', format="pdf")
+    plt.close()

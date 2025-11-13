@@ -17,7 +17,8 @@ DEVICE="cpu"
 
 dataset = BostonDataset(path="../data/boston/Boston.csv")
 
-x_ntk = torch.stack([dataset[i][0] for i in range(100)]).to(DEVICE)
+x_ntk = torch.stack([dataset[i][0] for i in range(500)]).to(DEVICE)
+target = torch.stack([dataset[i][1] for i in range(500)]).to(DEVICE)
 
 EPOCHS=50
 ITER=5
@@ -41,21 +42,19 @@ for dim in results_dict.keys():
         fnet_single = get_fnet_single(model)
         
         criterion = nn.MSELoss()
-        optimizer = optim.Adam(model.parameters(), lr=1e-5)
+        optimizer = optim.SGD(model.parameters(), lr=1e-4)
 
         ntk_init = get_ntk(fnet_single, parameters, x_ntk, multi=False)
 
         pbar = trange(EPOCHS)
         for epoch in pbar:
             epoch_loss = 0
-            for x, y in dataset:
-                x, y = x.to(DEVICE), y.to(DEVICE)
-                pred = model(x)
-                loss = criterion(pred, y)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                epoch_loss+=loss.item()
+            pred = model(x_ntk)
+            loss = criterion(pred, target)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            epoch_loss=loss.item()
 
             pbar.set_description(f"for epoch {epoch/1}/{EPOCHS} ; training loss : {epoch_loss}")
 

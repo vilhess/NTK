@@ -18,8 +18,8 @@ train_size = int(0.8 * len(dataset))
 test_size = len(dataset) - train_size
 trainset, testset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
-xs_train = torch.stack([trainset[i][0] for i in range(len(trainset))])
-ys_train = torch.stack([trainset[i][1] for i in range(len(trainset))]).reshape(-1, 1)
+xs_train = torch.stack([trainset[i][0] for i in range(100)])
+ys_train = torch.stack([trainset[i][1] for i in range(100)]).reshape(-1, 1)
 x_ntk = xs_train[:100]  # to compute ntk on a subset to save time
 
 # hidden layer size 10 
@@ -32,7 +32,7 @@ pbar = trange(10)
 for i in pbar:
     model = NN(in_dim=13, hidden_dim=10)
     
-    optimizer = optim.Adam(model.parameters(), lr=1e-5)
+    optimizer = optim.SGD(model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()
 
     with torch.no_grad():
@@ -44,19 +44,14 @@ for i in pbar:
     init_error = criterion(preds, ys_train).item()
     losses_simu = [init_error]
     lambdas_simu = [torch.min(l.real).item()]
-
-    steps_loss = []
     
     for epoch in range(50):
-        epoch_loss = 0
-        for x, y in trainset:
-            preds = model(x)
-            loss = criterion(preds, y)
-            epoch_loss+=loss.item()
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            steps_loss.append(loss.item())
+        preds = model(xs_train)
+        loss = criterion(preds, ys_train)
+        epoch_loss=loss.item()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
         with torch.no_grad():
             ntk = compute_ntk(model, x_ntk)
             model.eval()
@@ -82,7 +77,7 @@ plt.plot(np.mean(all_borne_infinie_10, axis=0), c="green", label="borne $\lambda
 plt.title('Hidden layer size : 10')
 plt.legend()
 plt.tight_layout()
-plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_10.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_10_2.pdf', bbox_inches='tight', format="pdf")
 plt.close()
 
 # hidden layer size 100
@@ -95,7 +90,7 @@ pbar = trange(10)
 for i in pbar:
     model = NN(in_dim=13, hidden_dim=100)
     
-    optimizer = optim.Adam(model.parameters(), lr=1e-5)
+    optimizer = optim.SGD(model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()
 
     with torch.no_grad():
@@ -107,19 +102,14 @@ for i in pbar:
     init_error = criterion(preds, ys_train).item()
     losses_simu = [init_error]
     lambdas_simu = [torch.min(l.real).item()]
-
-    steps_loss = []
     
     for epoch in range(50):
-        epoch_loss = 0
-        for x, y in trainset:
-            preds = model(x)
-            loss = criterion(preds, y)
-            epoch_loss+=loss.item()
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            steps_loss.append(loss.item())
+        preds = model(xs_train)
+        loss = criterion(preds, ys_train)
+        epoch_loss=loss.item()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
         with torch.no_grad():
             ntk = compute_ntk(model, x_ntk)
             model.eval()
@@ -145,7 +135,7 @@ plt.plot(np.mean(all_borne_infinie_100, axis=0), c="green", label="borne $\lambd
 plt.title('Hidden layer size : 100')
 plt.legend()
 plt.tight_layout()
-plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_100.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_100_2.pdf', bbox_inches='tight', format="pdf")
 plt.close()
 
 # hidden layer size 1000
@@ -158,7 +148,7 @@ pbar = trange(10)
 for i in pbar:
     model = NN(in_dim=13, hidden_dim=1000)
     
-    optimizer = optim.Adam(model.parameters(), lr=1e-5)
+    optimizer = optim.SGD(model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()
 
     with torch.no_grad():
@@ -170,19 +160,15 @@ for i in pbar:
     init_error = criterion(preds, ys_train).item()
     losses_simu = [init_error]
     lambdas_simu = [torch.min(l.real).item()]
-
-    steps_loss = []
     
     for epoch in range(50):
-        epoch_loss = 0
-        for x, y in trainset:
-            preds = model(x)
-            loss = criterion(preds, y)
-            epoch_loss+=loss.item()
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            steps_loss.append(loss.item())
+
+        preds = model(xs_train)
+        loss = criterion(preds, ys_train)
+        epoch_loss=loss.item()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
         with torch.no_grad():
             ntk = compute_ntk(model, x_ntk)
             model.eval()
@@ -209,5 +195,5 @@ plt.title('Hidden layer size : 1000')
 plt.legend()
 plt.xlabel('Epochs')
 plt.tight_layout()
-plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_1000.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../../figures/loss_bound/loss_bound_boston_hidden_1000_2.pdf', bbox_inches='tight', format="pdf")
 plt.close()

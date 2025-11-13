@@ -31,8 +31,7 @@ def get_jacobian(model, x, class_val):
     jac1 = torch.cat(jac1, dim=1)
     return jac1
 
-def compute_score(model, dataset, device="cpu"):
-    dataset_classes = subset_classes(dataset, device=device)
+def compute_score(model, dataset_classes, device="cpu"):
     model = model.to(device)
     jacs = []
     for c in dataset_classes.keys():
