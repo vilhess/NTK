@@ -1,18 +1,20 @@
 import torch 
 import torch.nn as nn
 
-class Network(nn.Module):
-    def __init__(self, hidden_dim):
-        super(Network, self).__init__()
+class NN(nn.Module):
+    def __init__(self, in_dim, hidden_dim, out_dim):
+        super(NN, self).__init__()
 
         self.block = nn.Sequential(
-            nn.Linear(13, hidden_dim, bias=False),
+            nn.Linear(in_dim, hidden_dim, bias=False),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 1, bias=False)
+            nn.Linear(hidden_dim, out_dim, bias=False)
         )
         self.init_weights()
 
     def forward(self, x):
+        if x.ndim >= 3:
+            x = torch.flatten(x, start_dim=1)
         return self.block(x)
 
     def init_weights(self):

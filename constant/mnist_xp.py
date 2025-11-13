@@ -10,7 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import trange
 
-from models.classification import NN, CNN
+from models.dense import NN
+from models.cnn import CNN
 from compute_ntk import get_ntk, get_fnet_single
 from utils import get_relative_norm
 
@@ -43,7 +44,7 @@ for dim in results_dict.keys():
     for iter in range(ITER):
         print(f'*** Working on model {dim} , iter {iter+1}/{ITER} ***')
 
-        model = NN(dim).to(DEVICE)
+        model = NN(in_dim=28*28, hidden_dim=dim, out_dim=10).to(DEVICE)
         parameters = {k:v.detach() for k, v in model.named_parameters()}
 
         fnet_single = get_fnet_single(model)

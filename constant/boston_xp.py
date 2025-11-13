@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import trange
 
-from models.regression import Network
+from models.dense import NN
 from compute_ntk import get_ntk, get_fnet_single
 from utils import get_relative_norm
 from data.boston.dataset import BostonDataset
@@ -36,7 +36,7 @@ for dim in results_dict.keys():
     for iter in range(ITER):
         print(f'*** Working on model {dim} , iter {iter+1}/{ITER} ***')
 
-        model = Network(dim).to(DEVICE)
+        model = NN(in_dim=13, hidden_dim=dim, out_dim=1).to(DEVICE)
         parameters = {k:v.detach() for k, v in model.named_parameters()}
 
         fnet_single = get_fnet_single(model)

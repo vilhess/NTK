@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import combinations
 
-
+from models.dense import NN
 from compute_ntk import get_ntk, get_fnet_single
 from data.boston.dataset import BostonDataset
 
@@ -16,25 +16,6 @@ DEVICE="cpu"
 dataset = BostonDataset(path="../data/boston/Boston.csv")
 
 x_ntk = torch.stack([dataset[i][0] for i in range(100)]).to(DEVICE)
-
-class Network(nn.Module):
-    def __init__(self, hidden_dim):
-        super(Network, self).__init__()
-
-        self.block = nn.Sequential(
-            nn.Linear(13, hidden_dim, bias=False),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, 1, bias=False)
-        )
-        self.init_weights()
-    def forward(self, x):
-        return self.block(x)
-    
-    def init_weights(self):
-        for i, m in enumerate(self.block):
-            if isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0.0, std=1.0/torch.sqrt(torch.tensor(m.in_features, dtype=torch.float32)))
-
 
 ITER = 50
 
@@ -57,7 +38,7 @@ for dim in results_dict.keys():
 
     # Compute NTK vectors for each iteration
     for iter in range(ITER):
-        model = Network(dim).to(DEVICE)
+        model = NN(in_dim=13, out_dim=1, hidden_dim=dim).to(DEVICE)
         parameters = {k: v.detach() for k, v in model.named_parameters()}
         fnet_single = get_fnet_single(model)
 

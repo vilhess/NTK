@@ -1,3 +1,6 @@
+import sys
+sys.path.append('../../')
+
 import torch 
 import torch.optim as optim 
 import torch.nn as nn 
@@ -9,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import trange
 
-from models import CNN
+from models.cnn import CNN
 from compute_score import compute_score, subset_classes
 
 DEVICE="cuda" if torch.cuda.is_available() else "cpu"
@@ -41,7 +44,7 @@ for hid_channels in [12, 32, 64, 128, 256]:
     for i in range(10):
         print(f"**** model {i} ****")
 
-        model = CNN(hidden_channels=hid_channels).to(DEVICE)
+        model = CNN(hid_channels).to(DEVICE)
 
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(model.parameters(), lr=1e-3)

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from tqdm import trange
 
 from data.boston.dataset import BostonDataset
-from model import NN
+from models.dense import NN
 from compute_ntk import compute_ntk
 
 dataset = BostonDataset("../../data/boston/Boston.csv")
@@ -31,7 +31,7 @@ for hid_dim in [10, 100, 1000]:
 
     pbar = trange(10)
     for i in pbar:
-        model = NN(in_dim=13, hidden_dim=hid_dim)
+        model = NN(in_dim=13, hidden_dim=hid_dim, out_dim=1)
         
         optimizer = optim.SGD(model.parameters(), lr=1e-3)
         criterion = nn.MSELoss()

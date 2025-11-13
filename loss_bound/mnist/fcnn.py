@@ -1,3 +1,6 @@
+import sys 
+sys.path.append("../../")
+
 import torch 
 import torch.optim as optim 
 import torch.nn as nn 
@@ -9,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import trange
 
-from models import NN
+from models.dense import NN
 from compute_score import compute_score, subset_classes
 
 DEVICE="cuda" if torch.cuda.is_available() else "cpu"
@@ -41,7 +44,7 @@ for hid_size in [100, 500, 1000, 5000]:
     for i in range(10):
         print(f"**** model {i} ****")
 
-        model = NN(hidden_dim=hid_size).to(DEVICE)
+        model = NN(in_dim=28*28, out_dim=10, hidden_dim=hid_size).to(DEVICE)
 
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(model.parameters(), lr=1e-3)

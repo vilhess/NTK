@@ -9,7 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import combinations
 
-from constant.models.classification import NN, CNN
+from models.dense import NN
+from models.cnn import CNN
 from compute_ntk import get_ntk, get_fnet_single
 
 DEVICE="cpu"
@@ -44,7 +45,7 @@ for dim in results_dict.keys():
 
     # Compute NTK vectors for each iteration
     for iter in range(ITER):
-        model = NN(dim).to(DEVICE)
+        model = NN(in_dim=28*28, out_dim=10, hidden_dim=dim).to(DEVICE)
         parameters = {k: v.detach() for k, v in model.named_parameters()}
         fnet_single = get_fnet_single(model)
 
