@@ -1,6 +1,10 @@
+import csv
+import json
+import os
 import sys
 sys.path.append('../')
-
+from figures.figure_setup import configure_seaborn
+configure_seaborn()
 import torch 
 import torch.nn as nn 
 from torchvision.datasets import MNIST
@@ -28,6 +32,11 @@ x_ntk = torch.stack([dataset[i][0] for i in range(20)]).to(DEVICE)
 
 ITER=50
 
+fcnn_csv_path = "../results/deterministic/mnist_fcnn_results.csv"
+# If the CSV file exists, remove it to start fresh
+if os.path.exists(fcnn_csv_path):
+    os.remove(fcnn_csv_path)
+
 results_dict = {
     50:[[] for _ in range(ITER)],
     100:[[] for _ in range(ITER)],
@@ -45,6 +54,7 @@ for dim in results_dict.keys():
 
     # Compute NTK vectors for each iteration
     for iter in range(ITER):
+        print(f'*** Working on model {dim} , iter {iter+1}/{ITER} ***')
         model = NN(in_dim=28*28, out_dim=10, hidden_dim=dim).to(DEVICE)
         parameters = {k: v.detach() for k, v in model.named_parameters()}
         fnet_single = get_fnet_single(model)
@@ -65,6 +75,20 @@ for dim in results_dict.keys():
         pairwise.append(dist)
 
     pairwise_dists[dim] = np.array(pairwise)
+
+    # Write results for this dimension to CSV
+    row = {
+        "hidden_dim": json.dumps(dim),
+        "mean_pairwise_dist": json.dumps(float(pairwise_dists[dim].mean())),
+        "std_pairwise_dist": json.dumps(float(pairwise_dists[dim].std())),
+        "pairwise_dists": json.dumps(pairwise_dists[dim].tolist()),
+    }
+    file_exists = os.path.exists(fcnn_csv_path) and os.path.getsize(fcnn_csv_path) > 0
+    with open(fcnn_csv_path, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["hidden_dim", "mean_pairwise_dist", "std_pairwise_dist", "pairwise_dists"])
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
 
 # Print mean pairwise distance for each dimension
 for dim, dists in pairwise_dists.items():
@@ -92,6 +116,11 @@ plt.close()
 # Convolutional network hidden dimensions to test
 
 ITER=50
+
+cnn_csv_path = "../results/deterministic/mnist_cnn_results.csv"
+# If the CSV file exists, remove it to start fresh
+if os.path.exists(cnn_csv_path):
+    os.remove(cnn_csv_path)
 
 results_dict = {
     16:[[0] for _ in range(ITER)],
@@ -129,6 +158,20 @@ for dim in results_dict.keys():
         pairwise.append(dist)
 
     pairwise_dists[dim] = np.array(pairwise)
+
+    # Write results for this dimension to CSV
+    row = {
+        "out_channels": json.dumps(dim),
+        "mean_pairwise_dist": json.dumps(float(pairwise_dists[dim].mean())),
+        "std_pairwise_dist": json.dumps(float(pairwise_dists[dim].std())),
+        "pairwise_dists": json.dumps(pairwise_dists[dim].tolist()),
+    }
+    file_exists = os.path.exists(cnn_csv_path) and os.path.getsize(cnn_csv_path) > 0
+    with open(cnn_csv_path, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["out_channels", "mean_pairwise_dist", "std_pairwise_dist", "pairwise_dists"])
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
 
 # Print mean pairwise distance for each dimension
 for dim, dists in pairwise_dists.items():

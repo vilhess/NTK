@@ -1,3 +1,6 @@
+import csv
+import json
+import os
 import sys
 sys.path.append('../../')
 
@@ -21,6 +24,11 @@ trainset, testset = torch.utils.data.random_split(dataset, [train_size, test_siz
 xs_train = torch.stack([trainset[i][0] for i in range(100)])
 ys_train = torch.stack([trainset[i][1] for i in range(100)]).reshape(-1, 1)
 x_ntk = xs_train[:100]  # to compute ntk on a subset to save time
+
+csv_path = "../../results/loss_bound/boston_results.csv"
+# If the CSV file exists, remove it to start fresh
+if os.path.exists(csv_path):
+    os.remove(csv_path)
 
 for hid_dim in [10, 100, 1000]:
     print(f"********** Hidden layer size : {hid_dim} **********")
@@ -71,6 +79,21 @@ for hid_dim in [10, 100, 1000]:
         all_losses.append(losses_simu)
         all_borne_finie.append(borne_fin)
         all_borne_infinie.append(borne_infin)
+
+        # Write this iteration's results to CSV
+        row = {
+            "hidden_dim": json.dumps(hid_dim),
+            "iteration": json.dumps(i),
+            "losses": json.dumps(losses_simu),
+            "borne_finie": json.dumps(borne_fin.tolist()),
+            "borne_infinie": json.dumps(borne_infin.tolist()),
+        }
+        file_exists = os.path.exists(csv_path) and os.path.getsize(csv_path) > 0
+        with open(csv_path, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["hidden_dim", "iteration", "losses", "borne_finie", "borne_infinie"])
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(row)
 
     epochs = np.arange(len(all_losses[0]))
 
