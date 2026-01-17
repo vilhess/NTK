@@ -4,50 +4,47 @@ import os
 import sys
 sys.path.append('../')
 from figures.figure_setup import configure_seaborn
-
+from models.transformer import Transformer
 import torch 
 import torch.nn as nn 
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import combinations
 
-from models.dense import NN
 from compute_ntk import get_ntk, get_fnet_single
-from data.boston.dataset import BostonDataset
+from data.timeseries.dataset import GlobalTempDataset
 
-DEVICE="cpu"
+DEVICE = "cpu"
 
-dataset = BostonDataset(path="../data/boston/Boston.csv")
+dataset = GlobalTempDataset(path="../data/timeseries/globaltemp.csv", seq_len=10)
 
-x_ntk = torch.stack([dataset[i][0] for i in range(100)]).to(DEVICE)
+x_ntk = torch.stack([dataset[i][0] for i in range(min(100, len(dataset)))]).to(DEVICE)
 
 ITER = 50
 
-csv_path = "../results/deterministic/boston_results.csv"
+csv_path = "../results/deterministic/transformer_results.csv"
 # If the CSV file exists, remove it to start fresh
 if os.path.exists(csv_path):
     os.remove(csv_path)
 
 results_dict = {
-    50: [[] for _ in range(ITER)],
-    100: [[] for _ in range(ITER)],
-    500: [[] for _ in range(ITER)],
-    1_000: [[] for _ in range(ITER)],
-    5_000: [[] for _ in range(ITER)],
-    10_000: [[] for _ in range(ITER)],
-    50_000: [[] for _ in range(ITER)],
-    100_000: [[] for _ in range(ITER)],
+    64: [[0] for _ in range(ITER)],
+    128: [[0] for _ in range(ITER)],
+    256: [[0] for _ in range(ITER)],
+    512: [[0] for _ in range(ITER)],
+    1024: [[0] for _ in range(ITER)],
 }
 
 pairwise_dists = {}  # store all distances per dim
 
 for dim in results_dict.keys():
+    print(f"Processing hidden_dim={dim}...")
 
     ntk_vectors = []
 
     # Compute NTK vectors for each iteration
     for iter in range(ITER):
-        model = NN(in_dim=13, out_dim=1, hidden_dim=dim).to(DEVICE)
+        model = Transformer(hidden_dim=dim, seq_len=10).to(DEVICE)
         parameters = {k: v.detach() for k, v in model.named_parameters()}
         fnet_single = get_fnet_single(model)
 
@@ -95,16 +92,14 @@ configure_seaborn()
 dims = sorted(pairwise_dists.keys())
 data = [pairwise_dists[dim] for dim in dims]
 
-configure_seaborn()
-
 plt.figure(figsize=(9, 5))
 plt.boxplot(data, labels=dims, showmeans=True, patch_artist=True)
 
 plt.xlabel("Hidden layer dimension", fontsize=12)
 plt.ylabel("Pairwise NTK norm", fontsize=12)
-plt.title("Distribution of Pairwise NTK Norms per Hidden Dimension", fontsize=13)
+plt.title("Distribution of Pairwise NTK Norms per Hidden Dimension (Transformer)", fontsize=13)
 plt.grid(axis="y", linestyle="--", alpha=0.6)
 
 plt.tight_layout()
-plt.savefig('../figures/deterministic/deterministic_boston_ntk_pairwise_distance_boxplot.pdf', bbox_inches='tight', format="pdf")
+plt.savefig('../figures/deterministic/deterministic_transformer_ntk_pairwise_distance_boxplot.pdf', bbox_inches='tight', format="pdf")
 plt.close()

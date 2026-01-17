@@ -1,5 +1,10 @@
+import csv
+import json
+import os
 import sys
+
 sys.path.append('../')
+from figures.figure_setup import configure_seaborn
 
 import torch 
 import torch.nn as nn 
@@ -30,7 +35,12 @@ target = torch.tensor([dataset[i][1] for i in range(35)]).to(DEVICE)
 # Linear Fully Connected Network
 
 EPOCHS=20
-ITER=5
+ITER=50
+
+fcnn_csv_path = "../results/constant/mnist_fcnn_results.csv"
+# If the CSV file exists, remove it to start fresh
+if os.path.exists(fcnn_csv_path):
+    os.remove(fcnn_csv_path)
 
 results_dict = {
     250:[[0] for _ in range(ITER)],
@@ -54,6 +64,8 @@ for dim in results_dict.keys():
 
         ntk_init = get_ntk(fnet_single, parameters, x_ntk, multi=True)
 
+        rel_norms = [0]  # Start with 0 for epoch 0
+
         pbar = trange(EPOCHS)
 
         for epoch in pbar:
@@ -69,7 +81,24 @@ for dim in results_dict.keys():
             with torch.no_grad():
                 ntk = get_ntk(fnet_single, parameters, x_ntk, multi=True)
                 rel_norm = get_relative_norm(ntk, ntk_init)
+            rel_norms.append(rel_norm)
             results_dict[dim][iter].append(rel_norm)
+
+        # Write this iteration's results to CSV
+        row = {
+            "hidden_dim": json.dumps(dim),
+            "iteration": json.dumps(iter),
+            "rel_norms": json.dumps(rel_norms),
+        }
+        file_exists = os.path.exists(fcnn_csv_path) and os.path.getsize(fcnn_csv_path) > 0
+        with open(fcnn_csv_path, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["hidden_dim", "iteration", "rel_norms"])
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(row)
+
+configure_seaborn()
+plt.figure(figsize=(9, 6))
 
 for dim, values in results_dict.items():
     # Compute mean and standard deviation over runs
@@ -88,16 +117,15 @@ for dim, values in results_dict.items():
                      alpha=0.2)
 
 # Axis labels and title
-plt.xlabel('Epochs', fontsize=12)
-plt.ylabel(r'$\frac{\|\theta_t - \theta_0\|^2}{\|\theta_0\|^2}$', fontsize=14)
-plt.title("Evolution of the Relative NTK Norm During Training", fontsize=14)
+plt.xlabel('Epochs')
+plt.ylabel(r'$\frac{\|\theta_t - \theta_0\|^2}{\|\theta_0\|^2}$',)
+# plt.title("Evolution of the Relative NTK Norm During Training", fontsize=14)
 
 # Set x-ticks explicitly for all epochs
 plt.xticks(epochs)
 
 # Legend and grid
-plt.legend(title='Width', fontsize=10)
-plt.grid(alpha=0.3)
+plt.legend(title='Width')
 plt.tight_layout()
 plt.savefig('../figures/constant/constant_mnist_ntk_relative_norm_fcnn.pdf', bbox_inches='tight', format="pdf")
 plt.close()
@@ -105,7 +133,12 @@ plt.close()
 # Convolutional Neural Network
 
 EPOCHS=10
-ITER=5
+ITER=50
+
+cnn_csv_path = "../results/constant/mnist_cnn_results.csv"
+# If the CSV file exists, remove it to start fresh
+if os.path.exists(cnn_csv_path):
+    os.remove(cnn_csv_path)
 
 results_dict = {
     16:[[0] for _ in range(ITER)],
@@ -130,6 +163,8 @@ for dim in results_dict.keys():
 
         ntk_init = get_ntk(fnet_single, parameters, x_ntk, multi=True)
 
+        rel_norms = [0]  # Start with 0 for epoch 0
+
         pbar = trange(EPOCHS)
         for epoch in pbar:
             epoch_loss = 0
@@ -145,7 +180,22 @@ for dim in results_dict.keys():
             with torch.no_grad():
                 ntk = get_ntk(fnet_single, parameters, x_ntk, multi=True)
                 rel_norm = get_relative_norm(ntk, ntk_init)
+            rel_norms.append(rel_norm)
             results_dict[dim][iter].append(rel_norm)
+
+            # Write this iteration's results to CSV
+        row = {
+            "out_channels": json.dumps(dim),
+            "iteration": json.dumps(iter),
+            "rel_norms": json.dumps(rel_norms),
+        }
+        file_exists = os.path.exists(cnn_csv_path) and os.path.getsize(cnn_csv_path) > 0
+        with open(cnn_csv_path, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["out_channels", "iteration", "rel_norms"])
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(row)
+
 
 for dim, values in results_dict.items():
     # Compute mean and std over runs

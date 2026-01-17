@@ -1,3 +1,6 @@
+import csv
+import json
+import os
 import sys 
 sys.path.append("../../")
 
@@ -34,6 +37,10 @@ for c in dataset_classes:
 inputs = torch.stack(inputs).to(DEVICE)
 targets = torch.tensor(targets).to(DEVICE)
 
+csv_path = "../../results/loss_bound/fcnn_mnist_results.csv"
+# If the CSV file exists, remove it to start fresh
+if os.path.exists(csv_path):
+    os.remove(csv_path)
 
 for hid_size in [100, 500, 1000, 5000]:
 
@@ -72,7 +79,7 @@ for hid_size in [100, 500, 1000, 5000]:
         records_borne_lambda0.append(borne_init.item())
         records_loss_exp.append(borne_init.item())
         
-        pbar = trange(10)
+        pbar = trange(100)
         for epoch in pbar:
             model.train()
 
@@ -108,6 +115,21 @@ for hid_size in [100, 500, 1000, 5000]:
         all_losses.append(records_loss_exp)
         all_borne_finie.append(records_borne_timesteps)
         all_borne_infinie.append(records_borne_lambda0)
+
+        # Write this iteration's results to CSV
+        row = {
+            "hidden_dim": json.dumps(hid_size),
+            "iteration": json.dumps(i),
+            "losses": json.dumps(records_loss_exp),
+            "borne_timesteps": json.dumps(records_borne_timesteps),
+            "borne_lambda0": json.dumps(records_borne_lambda0),
+        }
+        file_exists = os.path.exists(csv_path) and os.path.getsize(csv_path) > 0
+        with open(csv_path, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["hidden_dim", "iteration", "losses", "borne_timesteps", "borne_lambda0"])
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(row)
 
     epochs = np.arange(len(all_losses[0]))
 
